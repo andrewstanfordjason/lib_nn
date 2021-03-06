@@ -24,13 +24,13 @@ help:
 	$(info *************************************************************************************)
 
 
-APP_NAME := unit_test
+APP_NAME := mem_profiler
 
 TARGET_DEVICE = XCORE-AI-EXPLORER
 
 NN_PATH := ../../lib_nn
 
-DEPS_PATH := ./../deps
+# DEPS_PATH := ./../deps
 
 # UNITY_PATH := $(DEPS_PATH)/Unity
 # COMPUTE_ENGINE_PATH := $(DEPS_PATH)/compute-engine
@@ -55,7 +55,9 @@ ifneq ($(VERBOSE),$(EMPTY_STR))
   $(info OBJ_DIR: $(OBJ_DIR) )
 endif
 
-INCLUDES := $(NN_PATH)/api 
+# INCLUDES := $(NN_PATH)/api $(NN_PATH)/src $(UNITY_PATH)/src $(COMPUTE_ENGINE_PATH) $(FLAT_BUFFERS_PATH)/include
+# INCLUDES += $(RUY_PATH) $(TENSORFLOW_PATH) $(GEMMLOWP_PATH)
+INCLUDES := $(NN_PATH)/api $(NN_PATH)/src
 SOURCE_DIRS := src 
 SOURCE_FILE_EXTENSIONS := c cpp
 
@@ -68,8 +70,6 @@ ifneq ($(VERBOSE),$(EMPTY_STR))
 endif
 
 ifeq ($(strip $(PLATFORM)),$(strip xcore))
-  
-  $(info barf)
   PLATFORM_FLAGS += -target=$(TARGET_DEVICE) -mcmodel=large
 endif
 
@@ -153,7 +153,7 @@ $(OBJECT_FILES):
 
 # Libraries are built using a recursive make call.
 UNITY_STATIC_LIB := $(LIB_DIR)/unity.a
-DEPENDENCY_LIBS = 
+DEPENDENCY_LIBS = $(UNITY_STATIC_LIB)
 
 LIB_MAKE_OPTS := VERBOSE=$(VERBOSE) BUILD_DIR=$(abspath $(BUILD_DIR)/lib_nn) LIB_DIR=$(abspath $(LIB_DIR)) \
                  PLATFORM=$(PLATFORM) TARGET_DEVICE=$(TARGET_DEVICE)
@@ -167,7 +167,10 @@ force_look:
 $(LIB_NN_FILE): force_look
 	@$(MAKE) -C $(NN_PATH) $(abspath $@ ) $(LIB_MAKE_OPTS)
 
-ALL_STATIC_LIBS += $(LIB_NN_FILE) 
+$(UNITY_STATIC_LIB): force_look
+	@$(MAKE) -C ../etc/Unity $(abspath $@ ) $(DEP_MAKE_OPTS)
+
+ALL_STATIC_LIBS += $(LIB_NN_FILE) $(DEPENDENCY_LIBS)
 
 #######################################################
 # HOUSEKEEPING
@@ -209,7 +212,6 @@ $(APP_EXE_FILE):
 		$(APP_FLAGS)                        \
 		$(PLATFORM_FLAGS)                   \
 		$(OBJECT_FILES)                     \
-		$(XSCOPE_CONFIG)					\
 		-o $@                               \
 		$(REQUIRED_LIBRARIES)
 		
